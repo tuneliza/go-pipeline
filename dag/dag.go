@@ -28,6 +28,8 @@ type Task struct {
 	execFunc 	ExecFunc	// user specified fxn (defines the task)
 	next 		[]*Task  	// edges to the following Tasks
 	prior 		[]*Task  	// edges to preceding Tasks
+
+	BestEffort	bool		// if false, task procedes only if ALL dependencies are met; true - any dependencies are met.
 }
 
 // create an empty Dag

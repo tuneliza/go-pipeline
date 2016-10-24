@@ -1,53 +1,60 @@
 package main
 
 import (
-	"github.com/TuneLab/go-pipeline/dag"
 	"fmt"
+	"github.com/TuneLab/go-pipeline/dag"
 )
 
 // contains a description of tasks and their dependencies
 
 // this is test code for now
 
-func main(){
+func main() {
 
-// build example dag
+	// build example dag
 
-/*
-	d := dag.New("v_example")
-	one, _:= d.MakeTask("job_1", printMyID)
-	two, _:= d.MakeTask("job_2", printMyID)
-	three, _:= d.MakeTask("sink", printMyID)
+	/*	d := dag.New("v_merge_example")
+		one, _:= d.MakeTask("job_1", printMyID)
+		two, _:= d.MakeTask("job_2", printMyID)
+		three, _:= d.MakeTask("sink", printMyID)
+		three.SetUpstream(one)
+		three.SetUpstream(two) */
+
+	d := dag.New("v_merge_fail_example")
+	one, _ := d.MakeTask("job_1", printMyID)
+	two, _ := d.MakeTask("job_2", printMyIDFail)
+	three, _ := d.MakeTask("sink", printMyID)
 	three.SetUpstream(one)
-	three.SetUpstream(two) */
-	
-/*	d := dag.New("linear_example")
-	one, _:= d.MakeTask("source", printMyID)
-	two, _:= d.MakeTask("job_1", printMyID)
-	err := one.SetDownstream(two)
-	fmt.Printf("%v \n",err)*/
-
-/*	d := dag.New("parallel_example")
-	d.MakeTask("job_1", printMyID)
-	d.MakeTask("job_2", printMyID) */
-
-/*	d := dag.New("fanout_example")
-	one, _:= d.MakeTask("source", printMyID)
-	two, _:= d.MakeTask("job_1", printMyID)
-	three, _:= d.MakeTask("job_2", printMyID)
-	four, _ := d.MakeTask("sink", printMyID)
-	three.SetUpstream(one)
-	two.SetUpstream(one)
-	two.SetDownstream(four) */
-
-	d := dag.New("branch_example")
-	one, _:= d.MakeTask("source", printMyIDBranchToSink)
-	two, _:= d.MakeTask("job_1", printMyID)
-	three, _:= d.MakeTask("job_2", printMyID)
-	four, _ := d.MakeTask("sink", printMyID)
 	three.SetUpstream(two)
-	two.SetUpstream(one)
-	four.SetUpstream(one) 
+	three.BestEffort = true
+
+	/*	d := dag.New("linear_example")
+		one, _:= d.MakeTask("source", printMyID)
+		two, _:= d.MakeTask("job_1", printMyID)
+		err := one.SetDownstream(two)
+		fmt.Printf("%v \n",err)*/
+
+	/*	d := dag.New("parallel_example")
+		d.MakeTask("job_1", printMyID)
+		d.MakeTask("job_2", printMyID) */
+
+	/*	d := dag.New("fanout_example")
+		one, _:= d.MakeTask("source", printMyID)
+		two, _:= d.MakeTask("job_1", printMyID)
+		three, _:= d.MakeTask("job_2", printMyID)
+		four, _ := d.MakeTask("sink", printMyID)
+		three.SetUpstream(one)
+		two.SetUpstream(one)
+		two.SetDownstream(four) */
+
+	/*	d := dag.New("branch_example")
+		one, _:= d.MakeTask("source", printMyIDBranchToSink)
+		two, _:= d.MakeTask("job_1", printMyID)
+		three, _:= d.MakeTask("job_2", printMyID)
+		four, _ := d.MakeTask("sink", printMyID)
+		three.SetUpstream(two)
+		two.SetUpstream(one)
+		four.SetUpstream(one) */
 
 	d.Print()
 
@@ -63,13 +70,19 @@ func main(){
 }
 
 //example function
-func printMyID(ctx interface{}) (taskId string, success bool, err error){
+func printMyID(ctx interface{}) (taskID string, success bool, err error) {
 	n := ctx.(string)
 	fmt.Printf("My id is %s\n", n)
 	return "", true, nil
 }
 
-func printMyIDBranchToSink(ctx interface{}) (taskId string, success bool, err error){
+func printMyIDFail(ctx interface{}) (taskID string, success bool, err error) {
+	n := ctx.(string)
+	fmt.Printf("My id is %s(fail)\n", n)
+	return "", false, nil
+}
+
+func printMyIDBranchToSink(ctx interface{}) (taskID string, success bool, err error) {
 	n := ctx.(string)
 	fmt.Printf("My id is %s\n", n)
 	return "sink", true, nil

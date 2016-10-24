@@ -59,7 +59,7 @@ func (tr *TaskRun) run(ctx interface{}) error { // <-stop chan bool // can inter
 		}
 	}
 
-	// if all say SKIP, then this task is skipped // TODO: add for branching
+	// if all say SKIP, then this task is skipped 
 	if sig_count[TaskRunState_SKIP] == len(sigs) {
 		tr.state = TaskRunState_SKIP
 		for _, out := range tr.outs {
@@ -68,8 +68,11 @@ func (tr *TaskRun) run(ctx interface{}) error { // <-stop chan bool // can inter
 		return nil
 	}
 
-	// else if at least one FAIL/RESIGN, then propagate RESIGN down the chain. 
-	if sig_count[TaskRunState_FAIL] + sig_count[TaskRunState_RESIGN] > 0 {
+	// else if at least one FAIL/RESIGN when not BestEffort, then propagate RESIGN down the chain. 
+	// or all SKIP/FAIL/RESIGN when BestEffort
+	if (!tr.task.BestEffort && (sig_count[TaskRunState_FAIL] + sig_count[TaskRunState_RESIGN] > 0)) ||
+		(tr.task.BestEffort && (sig_count[TaskRunState_FAIL] + sig_count[TaskRunState_RESIGN] + sig_count[TaskRunState_SKIP] == len(sigs))){
+
 		tr.state = TaskRunState_RESIGN
 		for _, out := range tr.outs {
 			go func(c chan<- TaskRunState){ c<- TaskRunState_RESIGN }(out)
@@ -77,12 +80,13 @@ func (tr *TaskRun) run(ctx interface{}) error { // <-stop chan bool // can inter
 		return nil
 	}
 
-	// if at least one SUCCESS and 0+ SKIP 
-	// TODO: adjust this for BestEffort flag
-	if (sig_count[TaskRunState_SUCCESS] > 0) && 
-		(sig_count[TaskRunState_SUCCESS] + sig_count[TaskRunState_SKIP] == len(sigs)) {
+	// if at least one SUCCESS and the rest are SKIP when not BestEffort 
+	// or at least one SUCCESS and the rest are SKIP/FAIL/RESIGN  when BestEffort - but not ERROR
+	// execute task
+	if (sig_count[TaskRunState_SUCCESS] > 0) && (
+		!tr.task.BestEffort && (sig_count[TaskRunState_SUCCESS] + sig_count[TaskRunState_SKIP] == len(sigs)) || 
+		tr.task.BestEffort && (sig_count[TaskRunState_SUCCESS] + sig_count[TaskRunState_FAIL] + sig_count[TaskRunState_RESIGN] + sig_count[TaskRunState_SKIP] == len(sigs))){
 		
-		// execute task
 		return tr.executeAndSignal(ctx)
 	}	
 
@@ -191,10 +195,13 @@ func Run (d *Dag, taskParams map[string]interface{}) *DagRun{  // return channel
 	return &dr
 }
 
+// NOP
 func (dr *DagRun) ForceStop(){
 
 }
 
+
+// Print state of all tasks in the DagRun
 func (dr *DagRun) PrintStatus(){  // might need locks for that if @ runtime
 	for id, tr := range dr.nodes {
 		fmt.Printf("task %s : state %v\n", id, tr.state)
